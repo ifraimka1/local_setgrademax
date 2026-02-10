@@ -17,7 +17,7 @@
 /**
  * Plugin administration pages are defined here.
  *
- * @package     local_setgrademax
+ * @package     local_setmaxgrades
  * @category    admin
  * @copyright   2025 Solomonov Ifraim mr.ifraim@yandex.ru
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -26,10 +26,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
-    $settings = new admin_settingpage('local_setgrademax_settings', new lang_string('pluginname', 'local_setgrademax'));
+    $settings = new admin_settingpage('local_setmaxgrades_settings', new lang_string('pluginname', 'local_setmaxgrades'));
 
     // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedIf
-    if ($ADMIN->fulltree) {
-        // TO-DO: Define actual plugin settings page and add it to the tree - {@link https://docs.moodle.org/dev/Admin_settings}.
-    }
+
+        $ADMIN->add('localplugins', new admin_externalpage(
+            'local_setmaxgrades',
+            get_string('pluginname', 'local_setmaxgrades'),
+            new moodle_url('/local/setmaxgrades/index.php')
+        ));
+
 }

@@ -17,7 +17,7 @@
 /**
  * Plugin strings are defined here.
  *
- * @package     local_setgrademax
+ * @package     local_setmaxgrades
  * @category    string
  * @copyright   2025 Solomonov Ifraim mr.ifraim@yandex.ru
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -25,4 +25,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Set grade max';
+$string['pluginname'] = 'Set max grades';
+$string['uploadcsv'] = 'Upload CSV file';
+$string['csvfile'] = 'CSV file';
+$string['processgrades'] = 'Process grades';
+$string['success'] = 'Successfully updated {$a} grade items.';
+$string['nothingupdated'] = 'No grade items needed updating.';
+$string['errorinvalidfile'] = 'Invalid CSV file format.';
+$string['errorfile'] = 'Error processing file.';

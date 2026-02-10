@@ -17,14 +17,14 @@
 /**
  * Plugin version and other meta-data are defined here.
  *
- * @package     local_setgrademax
+ * @package     local_setmaxgrades
  * @copyright   2025 Solomonov Ifraim mr.ifraim@yandex.ru
  * @license     https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'local_setgrademax';
+$plugin->component = 'local_setmaxgrades';
 $plugin->release = '0.1.0';
 $plugin->version = 2026020900;
 $plugin->requires = 2022112800;
