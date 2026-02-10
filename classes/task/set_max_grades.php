@@ -24,9 +24,6 @@ class set_max_grades extends \core\task\adhoc_task {
         return get_string('pluginname', 'local_setmaxgrades');
     }
 
-    /**
-     * Создает задачу с данными CSV‑файла.
-     */
     public static function instance(int $userid, string $csvcontent): self {
         $task = new self();
         $task->set_custom_data((object)[
@@ -37,24 +34,23 @@ class set_max_grades extends \core\task\adhoc_task {
     }
 
     public function execute(): bool {
-        global $DB;
+        global $DB, $CFG;
+        require_once($CFG->libdir . '/gradelib.php');
 
         $data = $this->get_custom_data();
         $csvcontent = $data->csvcontent ?? '';
 
         $updatedcount = 0;
-        // Удаляем BOM (Byte Order Mark) если он есть
+
         $csvcontent = ltrim($csvcontent, "\xEF\xBB\xBF"); // UTF-8 BOM
         $csvcontent = ltrim($csvcontent, "\xFE\xFF");    // UTF-16 BE BOM
         $csvcontent = ltrim($csvcontent, "\xFF\xFE");    // UTF-16 LE BOM
         $csvcontent = ltrim($csvcontent, "\x00\x00\xFE\xFF"); // UTF-32 BE BOM
         $csvcontent = ltrim($csvcontent, "\xFF\xFE\x00\x00"); // UTF-32 LE BOM
 
-// Удаляем невидимые символы BOM (U+FEFF)
         $csvcontent = trim($csvcontent, "\xEF\xBB\xBF");
         $csvcontent = trim($csvcontent, "\u{FEFF}"); // Для PHP 7+
 
-// Разбиваем на строки
         $lines = preg_split('/\r\n|\n|\r/', $csvcontent);
 
         foreach ($lines as $line) {
@@ -67,8 +63,8 @@ class set_max_grades extends \core\task\adhoc_task {
             }
 
             [$course_module_id, $grademax] = $row;
-            $course_module_id = trim($course_module_id);
-            mtrace('$course_module_id = '.$course_module_id.' grademax = '.$grademax);
+            $course_module_id = (int)trim($course_module_id);
+            mtrace('$course_module_id = '.var_export($course_module_id, true).' grademax = '.$grademax);
 
             if ($course_module_id <= 0 || $grademax <= 0) {
                 continue;
@@ -77,8 +73,9 @@ class set_max_grades extends \core\task\adhoc_task {
             $sql = "
                 SELECT gi.*
                 FROM {course_modules} cm
-                JOIN {grade_items} gi ON gi.iteminstance = cm.id 
+                JOIN {grade_items} gi ON gi.iteminstance = cm.instance
                 WHERE cm.id = :cmid
+                AND gi.itemmodule = (SELECT m.name FROM {modules} m WHERE m.id = cm.module)
                 AND gi.itemtype = 'mod' 
                 AND gi.courseid = cm.course
             ";
@@ -86,7 +83,6 @@ class set_max_grades extends \core\task\adhoc_task {
             $item = $DB->get_record_sql($sql, ['cmid' => $course_module_id]);
 
             if (!$item) {
-                mtrace('item - '.json_encode($item));
                 mtrace("Нет такого course_modules.id = {$course_module_id}");
                 continue;
             }
@@ -98,14 +94,26 @@ class set_max_grades extends \core\task\adhoc_task {
 
             $item->grademax = $grademax;
             $item->timemodified = time();
+            $item->needsupdate = 1;
             $DB->update_record('grade_items', $item);
             $updatedcount++;
+
+            $courseids[$item->courseid] = true;
 
             mtrace("Updated grade_item.id={$item->id} (cmid={$course_module_id}) grademax={$grademax}");
         }
 
         mtrace("=== Set max grades task completed. Updated: {$updatedcount} items. ===");
-        \core_php_time_limit::raise();
+
+        if (!empty($courseids)) {
+            list($insql, $params) = $DB->get_in_or_equal(array_keys($courseids), SQL_PARAMS_NAMED);
+            $courses = $DB->get_records_select('course', "id $insql", $params);
+
+            foreach ($courses as $course) {
+                mtrace("Regrading courseid={$course->id}");
+                grade_regrade_final_grades_if_required($course);
+            }
+        }
 
         return true;
     }
