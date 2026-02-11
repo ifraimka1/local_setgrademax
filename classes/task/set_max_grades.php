@@ -111,7 +111,8 @@ class set_max_grades extends \core\task\adhoc_task {
 
             foreach ($courses as $course) {
                 mtrace("Regrading courseid={$course->id}");
-                grade_regrade_final_grades_if_required($course);
+                \grade_force_full_regrading($course->id);
+                \grade_regrade_final_grades($course->id);
             }
         }
 
